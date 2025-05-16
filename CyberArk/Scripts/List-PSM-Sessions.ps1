@@ -13,9 +13,8 @@
 =======================================
 #>
 # ===== CONFIGURATION =====
-$PVWAURL       = "https://pvwa.cybermark.lab/PasswordVault"
-$Username      = "apilive"
-$Password      = "LVxY7IQxlVLvtc8GzZ26EChqok1Ttxg3"
+$PVWAURL       = "<insert-url-pvwa>"
+$Username      = "<insert-account>"
 $AuthType       = "CyberArk" 
 $ExportJsonPath = ".\logs\Active-PSM-Sessions.json"
 $StatsJsonPath  = ".\logs\PSM-Session-Stats.json"
@@ -23,8 +22,7 @@ $LogFile        = ".\logs\API_Response_Log.json"
 $DebugMode      = $false  # 🔧 Set to $true to enable debug output
 
 # ===== GET PASSWORD FROM CCP =====
-<# 
-$CCPUrl         = "<insert-url>"
+$CCPUrl         = "<insert-url-ccp>"
 $AppID          = "<insert-appid>"
 $Safe           = "<insert-safe>"
 $Object         = "<insert-account>"
@@ -41,8 +39,7 @@ try {
     Write-Error "❌ Failed to retrieve password from CCP: $_"
     exit 1
 }
-
- #># ===== LOGIN & GET TOKEN =====
+# ===== LOGIN & GET TOKEN =====
 $body = @{
     username          = $Username
     password          = $Password
