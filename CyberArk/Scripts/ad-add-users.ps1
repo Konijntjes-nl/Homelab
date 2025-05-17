@@ -46,3 +46,4 @@ for ($i = 0; $i -lt 50; $i++) {
     New-ADUser -Name $name -SamAccountName $username -UserPrincipalName "$username@cybermark.lab" `
         -Path $lotrOU -AccountPassword (ConvertTo-SecureString "P@ssw0rd123" -AsPlainText -Force) `
         -Enabled $true -GivenName $name -Surname "Baggins" -DisplayName $name
+}
