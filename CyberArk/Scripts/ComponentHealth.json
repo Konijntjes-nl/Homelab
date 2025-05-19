@@ -1,0 +1,49 @@
+{
+  "Components": [
+    {
+      "ComponentID": "PVWA",
+      "ComponentName": "PVWA",
+      "Description": "Active Users",
+      "ConnectedComponentCount": 2,
+      "ComponentTotalCount": 2,
+      "ComponentSpecificStat": 1
+    },
+    {
+      "ComponentID": "CPM",
+      "ComponentName": "CPM",
+      "Description": "Managed Accounts",
+      "ConnectedComponentCount": 1,
+      "ComponentTotalCount": 1,
+      "ComponentSpecificStat": 2
+    },
+    {
+      "ComponentID": "SessionManagement",
+      "ComponentName": "PSM/PSMP",
+      "Description": "Concurrent Sessions",
+      "ConnectedComponentCount": 3,
+      "ComponentTotalCount": 3,
+      "ComponentSpecificStat": 0
+    },
+    {
+      "SensorTypesData": [],
+      "ComponentID": "PTA",
+      "ComponentName": "PTA",
+      "Description": "Monitored Targets",
+      "ConnectedComponentCount": 0,
+      "ComponentTotalCount": 0,
+      "ComponentSpecificStat": 0
+    }
+  ],
+  "Vaults": [
+    {
+      "IP": "10.0.3.3",
+      "Role": "Primary",
+      "IsLoggedOn": true
+    },
+    {
+      "IP": "10.0.3.4",
+      "Role": "DR",
+      "IsLoggedOn": true
+    }
+  ]
+}

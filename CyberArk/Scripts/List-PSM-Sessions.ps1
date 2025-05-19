@@ -10,45 +10,59 @@
   Date        | Author    | Description
   ------------|-----------|--------------------------------------------------------
   2025-05-15  | Mark Lam  | Initial version using CCP for credentials + JSON export
+  ------------|-----------|--------------------------------------------------------
+  2025-05-15  | Mark Lam  | Added seperate stats json for monitoring. 
+  ------------|-----------|--------------------------------------------------------
+  2025-05-19  | Mark Lam  | Added maxsessions and PSM sesions to *
+  ------------|-----------|--------------------------------------------------------
+  2025-05-19  | Mark Lam  | Fixed CCP intergration
+  ------------|-----------|--------------------------------------------------------
+  ------------|-----------|--------------------------------------------------------
+  ------------|-----------|--------------------------------------------------------
+  ------------|-----------|--------------------------------------------------------
 =======================================
 #>
 # ===== CONFIGURATION =====
-$PVWAURL       = "<insert-url-pvwa>"
-$Username      = "<insert-account>"
-$AuthType       = "CyberArk" 
-$ExportJsonPath = ".\logs\Active-PSM-Sessions.json"
-$StatsJsonPath  = ".\logs\PSM-Session-Stats.json"
-$LogFile        = ".\logs\API_Response_Log.json"
-$DebugMode      = $false  # 🔧 Set to $true to enable debug output
+$pvwaurl        = "<pvwa-url>"                              # CCP address (FQDN or IP)
+$username       = "<privileged-account>"                    # Username of the privileged account
+$authtype       = "CyberArk"                                # Authentication type
+$exportjsonpath = ".\logs\Active-PSM-Sessions.json"         # All sessions Json 
+$statsjsonpath  = ".\logs\PSM-Session-Stats.json"           # Monitoring Json
+$logfile        = ".\logs\API_Response_Log.json"            # Debug log file API
+$maxsessions    = 100                                       # Max number of recieved sessions default =25
+$debugmode      = $false                                    # 🔧 Set to $true to enable debug output
 
 # ===== GET PASSWORD FROM CCP =====
-$CCPUrl         = "<insert-url-ccp>"
-$AppID          = "<insert-appid>"
-$Safe           = "<insert-safe>"
-$Object         = "<insert-account>"
+$ccpIP   = "<ccp-url>"                                      # CCP address (FQDN or IP)
+$appID   = "<application-id>"                               # Application ID
+$safe    = "<safe-name>"                                    # Safe in which the privileged account is stored
+$object  = "<privileged-account>"                           # username of the privileged account
 
+# Use TLS 1.2
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
+# Try to get password from CCP
 try {
-    $ccpResponse = Invoke-RestMethod `
-        -Uri "$CCPUrl?AppID=$AppID&Safe=$Safe&Object=$Object" `
-        -Method GET `
-        -UseBasicParsing
-
-    $Password = $ccpResponse.Content
+    $ccpResponse = Invoke-RestMethod -Method GET `
+        -Uri "https://$ccpIP/AIMWebService/api/Accounts?AppID=$appID&Safe=$safe&Query=username=$object" `
+        -Headers @{ "Content-Type" = "application/json" }
+    $password = $ccpResponse.Content
     Write-Host "🔐 Password retrieved securely from CCP."
 } catch {
     Write-Error "❌ Failed to retrieve password from CCP: $_"
     exit 1
 }
+
 # ===== LOGIN & GET TOKEN =====
 $body = @{
-    username          = $Username
-    password          = $Password
+    username          = $username
+    password          = $password
     concurrentSession = $true
 } | ConvertTo-Json
 
 try {
     $token = Invoke-RestMethod `
-        -Uri "$PVWAURL/API/Auth/$AuthType/Logon" `
+        -Uri "$pvwaurl/API/Auth/$authtype/Logon" `
         -Method POST `
         -Body $body `
         -ContentType "application/json"
@@ -63,7 +77,7 @@ $headers = @{ Authorization = $token }
 # ===== GET LIVE SESSIONS =====
 try {
     $response = Invoke-RestMethod `
-        -Uri "$PVWAURL/API/LiveSessions" `
+        -Uri "$pvwaurl/API/LiveSessions?limit=$maxsessions" `
         -Headers $headers `
         -Method GET
 
@@ -74,9 +88,9 @@ try {
         Sort-Object Count -Descending |
         Select-Object @{Name='ProviderID'; Expression={ $_.Name }}, Count
 
-    if ($DebugMode) {
-        $response | ConvertTo-Json -Depth 10 | Out-File $LogFile
-        Write-Host "📁 API response logged to: $LogFile"
+    if ($debugmode) {
+        $response | ConvertTo-Json -Depth 10 | Out-File $logfile
+        Write-Host "📁 API response logged to: $logfile"
         Write-Host "`n📊 Total sessions returned by API: $($sessions.Count)"
 
         Write-Host "`n🔎 Sorted ProviderID values:`n"
@@ -84,14 +98,14 @@ try {
     }
 } catch {
     Write-Error "❌ Failed to retrieve live sessions: $_"
-    Invoke-RestMethod -Uri "$PVWAURL/API/Auth/Logoff" -Headers $headers -Method POST
+    Invoke-RestMethod -Uri "$pvwaurl/API/Auth/Logoff" -Headers $headers -Method POST
     exit 1
 }
 
 # ===== FILTER FOR PSM SESSIONS =====
 
 $psmSessions = $sessions | Where-Object {
-    ($_.ConnectionComponentID -as [string]).Trim().ToUpper() -like "PSM*"
+    ($_.ConnectionComponentID -as [string]).Trim().ToUpper() -like "*"
 }
 
 Write-Host "`n🎯 Active PSM-RDP Sessions Found: $($psmSessions.Count)`n"
@@ -104,7 +118,7 @@ $psmSessions | ForEach-Object {
 # ===== DISPLAY & EXPORT RESULTS =====
 $output = $psmSessions | Select-Object `
     @{Name='User'; Expression={ $_.User }},
-    @{Name='PAM-account'; Expression={ $_.AccountUsername }},
+    @{Name='PAM-account'; Expression={ $_.Accountusername }},
     @{Name='Domain/local'; Expression={ $_.AccountAddress }},
     @{Name='TargetMachine'; Expression={ $_.RemoteMachine }},
     @{Name='FromIP'; Expression={ $_.FromIP }},
@@ -127,8 +141,8 @@ try {
         SessionCount = $output.Count
         Sessions = $output
     }
-    $exportObject | ConvertTo-Json -Depth 5 | Out-File -FilePath $ExportJsonPath -Encoding UTF8
-    Write-Host "`n📁 Exported session data to: $ExportJsonPath"
+    $exportObject | ConvertTo-Json -Depth 5 | Out-File -FilePath $exportjsonpath -Encoding UTF8
+    Write-Host "`n📁 Exported session data to: $exportjsonpath"
 } catch {
     Write-Warning "⚠️ Failed to export session JSON: $_"
 }
@@ -140,15 +154,15 @@ try {
         TotalSessions = $sessions.Count
         ProviderStats = $componentStats
     }
-    $componentStatsExport | ConvertTo-Json -Depth 5 | Out-File -FilePath $StatsJsonPath -Encoding UTF8
-    Write-Host "📁 Exported Provider stats to: $StatsJsonPath"
+    $componentStatsExport | ConvertTo-Json -Depth 5 | Out-File -FilePath $statsjsonpath -Encoding UTF8
+    Write-Host "📁 Exported Provider stats to: $statsjsonpath"
 } catch {
     Write-Warning "⚠️ Failed to export component stats JSON: $_"
 }
 
 # ===== LOG OFF =====
 try {
-    Invoke-RestMethod -Uri "$PVWAURL/API/Auth/Logoff" -Headers $headers -Method POST
+    Invoke-RestMethod -Uri "$pvwaurl/API/Auth/Logoff" -Headers $headers -Method POST
     Write-Host "`n[+] Logged off from CyberArk."
 } catch {
     Write-Warning "⚠️ Failed to log off cleanly."
