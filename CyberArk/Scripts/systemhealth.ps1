@@ -19,7 +19,7 @@
 $pvwaurl        = "<pvwa-url>"                              # PVWA URL (FQDN or IP)
 $username       = "<privileged-account>"                    # Username of the privileged account
 $authtype       = "CyberArk"                                # Authentication type
-$exportjsonpath = ".\ComponentHealth.json"                  # Export JSON path
+$exportjsonpath = ".\logs\ComponentHealth.json"                  # Export JSON path
 
 # CCP Settings
 $ccpIP          = "<ccp-url>"                               # CCP server (FQDN or IP)
