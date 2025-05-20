@@ -1,14 +1,26 @@
 <#
 =======================================
 CyberArk System Health Detailed Script
-Author       : Mark Lam (adapted by ChatGPT)
+Author       : Mark Lam 
 Created      : 2025-05-20
 Description  : Retrieves detailed CyberArk component health info via REST API.
                Uses known ComponentIDs (PVWA, CPM, PTA, AIM, SessionManagement).
                Converts Unix timestamps to readable strings for display and export.
                Exports individual JSON files per component.
+=======================================
 Documentation:
   https://docs.cyberark.com/pam-self-hosted/latest/en/content/webservices/systemdetails.htm
+=======================================
+  Revision History:
+  ---------------------------------------------------------------------------------
+  Date        | Author    | Description
+  ------------|-----------|--------------------------------------------------------
+  2025-05-20  | Mark Lam  | Initial version using CCP for credentials + JSON export
+  ------------|-----------|--------------------------------------------------------
+  ------------|-----------|--------------------------------------------------------
+  ------------|-----------|--------------------------------------------------------
+  ------------|-----------|--------------------------------------------------------
+  ------------|-----------|--------------------------------------------------------
 =======================================
 #>
 
