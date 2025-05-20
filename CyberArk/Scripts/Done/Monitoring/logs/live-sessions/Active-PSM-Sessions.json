@@ -1,5 +1,15 @@
 {
-  "Timestamp": "2025-05-21T00:09:20",
-  "SessionCount": 0,
-  "Sessions": null
+  "Timestamp": "2025-05-21T00:16:51",
+  "SessionCount": 1,
+  "Sessions": {
+    "User": "administrator",
+    "PAM-account": "adm-mlam",
+    "Domain/local": "cybermark.lab",
+    "TargetMachine": "PSM01.cybermark.lab",
+    "FromIP": "10.0.0.50",
+    "SessionID": "29_191",
+    "StartTimeReadable": "2025-05-21T00:14:53+02:00",
+    "ConnectionComponentID": "PSM-RDP",
+    "ProviderID": "PSMApp_PSM02"
+  }
 }
