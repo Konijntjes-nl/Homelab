@@ -14,9 +14,9 @@ Documentation:
 
 # ===== CONFIGURATION =====
 # PVWA Settings 
-$pvwaurl        = "https://pvwa.cybermark.lab/passwordvault/"  # PVWA URL - ensure trailing slash
-$username       = "monitoring-user"                            # Privileged user
-$authtype       = "CyberArk"                                   # Authentication type
+$pvwaurl        = "<pvwa-url>"                              # CCP address (FQDN or IP)
+$username       = "<privileged-account>"                    # Username of the privileged account
+$authtype       = "CyberArk"                                # Authentication type
 # CCP Settings
 $ccpIP          = "<ccp-url>"                       # CCP server
 $appID          = "<application-id>"                # CCP AppID
@@ -28,7 +28,7 @@ $useCCP         = $false                             # Set false to enter passwo
 $componentIDs = @('PVWA', 'CPM', 'PTA', 'AIM', 'SessionManagement')
 
 # Output directory for JSON exports
-$exportBaseDir = "$PSScriptRoot\logs"
+$exportBaseDir = "$PSScriptRoot\logs\systemhealth"
 if (-not (Test-Path $exportBaseDir)) { New-Item -Path $exportBaseDir -ItemType Directory -Force | Out-Null }
 
 # ===== TLS Setup =====

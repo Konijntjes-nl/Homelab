@@ -26,9 +26,9 @@
 $pvwaurl        = "<pvwa-url>"                              # CCP address (FQDN or IP)
 $username       = "<privileged-account>"                    # Username of the privileged account
 $authtype       = "CyberArk"                                # Authentication type
-$exportjsonpath = ".\logs\Active-PSM-Sessions.json"         # All sessions Json 
-$statsjsonpath  = ".\logs\PSM-Session-Stats.json"           # Monitoring Json
-$logfile        = ".\logs\API_Response_Log.json"            # Debug log file API
+$exportjsonpath = "$PSScriptRoot\logs\live-sessions\Active-PSM-Sessions.json"         # All sessions Json 
+$statsjsonpath  = "$PSScriptRoot\logs\live-sessions\PSM-Session-Stats.json"           # Monitoring Json
+$logfile        = "$PSScriptRoot\logs\live-sessions\API_Response_Log.json"            # Debug log file API
 $maxsessions    = 100                                       # Max number of recieved sessions default =25
 $debugmode      = $false                                    # 🔧 Set to $true to enable debug output
 
