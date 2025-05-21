@@ -1,0 +1,8 @@
+"userName","address","platformId","safeName","MgmtEnabled","MgmtStatus","NonCompliantReason"
+"srv-cyb-ldap-bind@cybermark.lab","DC01.cybermark.lab","WinDomain","VaultInternal","False",,"Not managed by CPM; Password verification fails; Password change failed; CPM Disabled"
+"PSMAdminConnect","10.0.3.9","","PSM","True",,"Password verification fails; Password change failed; CPM Disabled; Platform misconfiguration"
+"PSMAdminConnect","10.0.3.10","","PSM","True",,"Password verification fails; Password change failed; CPM Disabled; Platform misconfiguration"
+"PSMConnect","10.0.3.10","","PSM","True",,"Password verification fails; Password change failed; CPM Disabled; Platform misconfiguration"
+"PSMConnect","10.0.3.9","","PSM","True",,"Password verification fails; Password change failed; CPM Disabled; Platform misconfiguration"
+"mlam","lb01.cybermark.lab","UnixSSH","CYB-Servers","False","failure","Not managed by CPM; Password verification fails; Password change failed; CPM Disabled"
+"adm-mlam","cybermark.lab","WindowsServerAccounts","CYB-Servers","True","success","Password verification fails; Password change failed; CPM Disabled"
