@@ -23,7 +23,7 @@ export CLOUD_INIT_SSHKEY="/root/.ssh/id_rsa.pub" # Provides the path to the SSH 
 export CLOUD_INIT_IP="dhcp"
 export CLOUD_INIT_NAMESERVER="10.0.0.254"
 export CLOUD_INIT_SEARCHDOMAIN="mgmt.cybermark.tech"
-export TEMPLATE_ID="9004"
+export TEMPLATE_ID="9001"
 export VM_NAME="ubuntu-24"
 export VM_DISK_IMAGE="${IMAGES_PATH}/noble-server-cloudimg-amd64.img"
 # Create VM. Change the cpu model

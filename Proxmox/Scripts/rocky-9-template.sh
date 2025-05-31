@@ -25,7 +25,7 @@ export CLOUD_INIT_SSHKEY="/root/.ssh/id_rsa.pub" # Provides the path to the SSH 
 export CLOUD_INIT_IP="dhcp"
 export CLOUD_INIT_NAMESERVER="10.0.0.254"
 export CLOUD_INIT_SEARCHDOMAIN="mgmt.cybermark.tech"
-export TEMPLATE_ID="9002"
+export TEMPLATE_ID="9000"
 export VM_NAME="rocky-9"
 export VM_DISK_IMAGE="${IMAGES_PATH}/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
 # Create VM. Change the cpu model
