@@ -1,7 +1,6 @@
 ############################################################################
 #############################################################################
-export IMAGES_PATH="/tmp/images/" # defines the path where the images will be stored and change the path to it.
-mkdir ${IMAGES_PATH}
+export IMAGES_PATH="/root/images/" # defines the path where the images will be stored and change the path to it.
 cd ${IMAGES_PATH}
 #############################################################################
 echo downloading cloud-images
@@ -22,7 +21,7 @@ export VM_CPU_SOCKETS=1
 export VM_CPU_CORES=1
 export VM_MEMORY=1024
 export CLOUD_INIT_USER="mlam" # Specifies the username to be created using Cloud-init.
-export CLOUD_INIT_SSHKEY="/root/id_rsa.pub" # Provides the path to the SSH public key for the user.
+export CLOUD_INIT_SSHKEY="/root/.ssh/id_rsa.pub" # Provides the path to the SSH public key for the user.
 export CLOUD_INIT_IP="dhcp"
 export CLOUD_INIT_NAMESERVER="10.0.0.254"
 export CLOUD_INIT_SEARCHDOMAIN="mgmt.cybermark.tech"

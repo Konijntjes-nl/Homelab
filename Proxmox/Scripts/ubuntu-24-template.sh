@@ -1,20 +1,17 @@
 ############################################################################
 #############################################################################
-export IMAGES_PATH="/tmp/images/" # defines the path where the images will be stored and change the path to it.
-mkdir ${IMAGES_PATH}
+export IMAGES_PATH="/root/images/" # defines the path where the images will be stored and change the path to it.
 cd ${IMAGES_PATH}
 #############################################################################
 echo downloading cloud-images
 #############################################################################
-wget Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 https://rockylinux.mirror.liteserver.nl/9.5/images/x86_64/Rocky-9-GenericCloud-Base-9.5-20241118.0.x86_64.qcow2
+wget -O noble-server-cloudimg-amd64.img https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
 #############################################################################
-echo modifing Rocky-9-GenericCloud
 #############################################################################
-virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --install "vim,unzip,bash-completion,wget,curl,qemu-guest-agent"
-virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --run-command 'systemctl enable qemu-guest-agent'
-virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --timezone "Europe/Amsterdam"
-virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --selinux-relabel
-qemu-img resize Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 20G
+virt-customize -a noble-server-cloudimg-amd64.img --install "vim,unzip,bash-completion,wget,curl,qemu-guest-agent"
+virt-customize -a noble-server-cloudimg-amd64.img --run-command 'systemctl enable qemu-guest-agent'
+virt-customize -a noble-server-cloudimg-amd64.img --timezone "Europe/Amsterdam"
+qemu-img resize noble-server-cloudimg-amd64.img 20G
 #############################################################################
 #############################################################################
 export QEMU_CPU_MODEL="host" # Specifies the CPU model to be used for the VM according your environment and the desired CPU capabilities.
@@ -22,13 +19,13 @@ export VM_CPU_SOCKETS=1
 export VM_CPU_CORES=1
 export VM_MEMORY=1024
 export CLOUD_INIT_USER="mlam" # Specifies the username to be created using Cloud-init.
-export CLOUD_INIT_SSHKEY="/root/id_rsa.pub" # Provides the path to the SSH public key for the user.
+export CLOUD_INIT_SSHKEY="/root/.ssh/id_rsa.pub" # Provides the path to the SSH public key for the user.
 export CLOUD_INIT_IP="dhcp"
 export CLOUD_INIT_NAMESERVER="10.0.0.254"
 export CLOUD_INIT_SEARCHDOMAIN="mgmt.cybermark.tech"
 export TEMPLATE_ID="9004"
-export VM_NAME="rocky-9"
-export VM_DISK_IMAGE="${IMAGES_PATH}/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+export VM_NAME="ubuntu-24"
+export VM_DISK_IMAGE="${IMAGES_PATH}/noble-server-cloudimg-amd64.img"
 # Create VM. Change the cpu model
 qm create ${TEMPLATE_ID} --name ${VM_NAME} --cpu ${QEMU_CPU_MODEL} --sockets ${VM_CPU_SOCKETS} --cores ${VM_CPU_CORES} --memory ${VM_MEMORY} --vga serial0 --serial0 socket --net0 virtio,bridge=vmbr0 --ostype l26 --agent 1 --scsihw virtio-scsi-single
 # Import Disk

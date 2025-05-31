@@ -1,12 +1,11 @@
 ############################################################################
 #############################################################################
-export IMAGES_PATH="/tmp/images/" # defines the path where the images will be stored and change the path to it.
-mkdir ${IMAGES_PATH}
+export IMAGES_PATH="/root/images/" # defines the path where the images will be stored and change the path to it.
 cd ${IMAGES_PATH}
 #############################################################################
 echo downloading cloud-image
 #############################################################################
-wget AlmaLinux-10-GenericCloud-latest.x86_64.qcow2 https://almalinux.mirror.liteserver.nl/10/cloud/x86_64/images/AlmaLinux-10-GenericCloud-latest.x86_64.qcow2
+wget -O AlmaLinux-10-GenericCloud-latest.x86_64.qcow2 https://almalinux.mirror.liteserver.nl/10/cloud/x86_64/images/AlmaLinux-10-GenericCloud-latest.x86_64.qcow2
 #############################################################################
 echo modifing AlmaLinux-9-GenericCloud
 #############################################################################
@@ -17,12 +16,12 @@ virt-customize -a AlmaLinux-10-GenericCloud-latest.x86_64.qcow2 --selinux-relabe
 qemu-img resize AlmaLinux-10-GenericCloud-latest.x86_64.qcow2 20G
 #############################################################################
 #############################################################################
-export QEMU_CPU_MODEL="host" # Specifies the CPU model to be used for the VM according your environment and the desired CPU capabilities.
+export QEMU_CPU_MODEL="host"                        # Specifies the CPU model to be used for the VM according your environment and the desired CPU capabilities.
 export VM_CPU_SOCKETS=1
 export VM_CPU_CORES=1
 export VM_MEMORY=1024
-export CLOUD_INIT_USER="mlam" # Specifies the username to be created using Cloud-init.
-export CLOUD_INIT_SSHKEY="/root/id_rsa.pub" # Provides the path to the SSH public key for the user.
+export CLOUD_INIT_USER="mlam"                       # Specifies the username to be created using Cloud-init.
+export CLOUD_INIT_SSHKEY="/root/.ssh/id_rsa.pub"    # Provides the path to the SSH public key for the user.
 export CLOUD_INIT_IP="dhcp"
 export CLOUD_INIT_NAMESERVER="10.0.0.254"
 export CLOUD_INIT_SEARCHDOMAIN="mgmt.cybermark.tech"
@@ -46,4 +45,3 @@ qm set ${TEMPLATE_ID} --name "${VM_NAME}-template"
 qm template ${TEMPLATE_ID}
 #############################################################################
 #############################################################################
-
