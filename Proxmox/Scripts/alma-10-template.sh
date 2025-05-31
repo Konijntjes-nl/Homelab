@@ -1,7 +1,7 @@
 ############################################################################
 #############################################################################
-export IMAGES_PATH="/root/images" # defines the path where the images will be stored and change the path to it.
-cd /root/images
+export IMAGES_PATH="/root/images/" # defines the path where the images will be stored and change the path to it.
+cd ${IMAGES_PATH}
 #############################################################################
 echo downloading cloud-image
 #############################################################################
@@ -27,7 +27,7 @@ export CLOUD_INIT_NAMESERVER="10.0.0.254"
 export CLOUD_INIT_SEARCHDOMAIN="mgmt.cybermark.tech"
 export TEMPLATE_ID="9001"
 export VM_NAME="alma-10"
-export VM_DISK_IMAGE="/root/images/AlmaLinux-10-GenericCloud-latest.x86_64.qcow2"
+export VM_DISK_IMAGE="${IMAGES_PATH}/AlmaLinux-10-GenericCloud-latest.x86_64.qcow2"
 # Create VM. Change the cpu model
 qm create ${TEMPLATE_ID} --name ${VM_NAME} --cpu ${QEMU_CPU_MODEL} --sockets ${VM_CPU_SOCKETS} --cores ${VM_CPU_CORES} --memory ${VM_MEMORY} --vga serial0 --serial0 socket --net0 virtio,bridge=vmbr0 --ostype l26 --agent 1 --scsihw virtio-scsi-single
 # Import Disk
