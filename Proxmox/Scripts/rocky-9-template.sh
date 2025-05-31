@@ -9,8 +9,12 @@ wget -O Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 https://rockylinux.mirror.
 #############################################################################
 echo modifing Rocky-9-GenericCloud
 #############################################################################
-virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --install "vim,unzip,bash-completion,wget,curl,qemu-guest-agent"
+virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --install "@server"
 virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --run-command 'systemctl enable qemu-guest-agent'
+virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --run-command 'systemctl enable --now cockpit.socket'
+virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --run-command 'sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication yes/g" /etc/ssh/sshd_config'
+virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --run-command 'sed -i "s/.*PermitRootLogin.*/PermitRootLogin no/g"  /etc/ssh/sshd_config'
+virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --run-command "sed -i 's/^ssh_pwauth:[[:space:]]*false/ssh_pwauth: true/' /etc/cloud/cloud.cfg"
 virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --timezone "Europe/Amsterdam"
 virt-customize -a Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 --selinux-relabel
 qemu-img resize Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 20G
@@ -21,7 +25,8 @@ export VM_CPU_SOCKETS=1
 export VM_CPU_CORES=1
 export VM_MEMORY=1024
 export CLOUD_INIT_USER="mlam" # Specifies the username to be created using Cloud-init.
-export CLOUD_INIT_SSHKEY="/root/.ssh/id_rsa.pub" # Provides the path to the SSH public key for the user.
+export CLOUD_INIT_PASSWORD=".env" # Specifies the username to be created using Cloud-init.
+export CLOUD_INIT_SSHKEY=".id_rsa.pub" # Provides the path to the SSH public key for the user.
 export CLOUD_INIT_IP="dhcp"
 export CLOUD_INIT_NAMESERVER="10.0.0.254"
 export CLOUD_INIT_SEARCHDOMAIN="mgmt.cybermark.tech"
@@ -37,7 +42,7 @@ qm set ${TEMPLATE_ID} --ide2 unraid:cloudinit --boot order=scsi0
 # Cloud-init network-data
 qm set ${TEMPLATE_ID} --ipconfig0 ip=${CLOUD_INIT_IP} --nameserver ${CLOUD_INIT_NAMESERVER} --searchdomain ${CLOUD_INIT_SEARCHDOMAIN}
 # Cloud-init user-data
-qm set ${TEMPLATE_ID} --ciupgrade 0 --ciuser ${CLOUD_INIT_USER} --sshkeys ${CLOUD_INIT_SSHKEY}
+qm set ${TEMPLATE_ID} --ciupgrade 0 --ciuser ${CLOUD_INIT_USER} --sshkeys ${CLOUD_INIT_SSHKEY} --cipassword ${CLOUD_INIT_PASSWORD}
 # Cloud-init regenerate ISO image, ensuring that the VM will properly initialize with the desired parameters.
 qm cloudinit update ${TEMPLATE_ID}
 # Create Template
