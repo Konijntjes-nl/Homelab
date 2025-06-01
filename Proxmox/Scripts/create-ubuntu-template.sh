@@ -52,12 +52,6 @@ IMAGE_FILE="noble-server-cloudimg-amd64.img"
 
 virt-customize -a "$IMAGE_FILE" --install "vim,bash-completion,wget,curl,qemu-guest-agent"
 virt-customize -a "$IMAGE_FILE" --run-command 'systemctl enable qemu-guest-agent'
-virt-customize -a "$IMAGE_FILE" --run-command \
-    'sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication yes/g" /etc/ssh/sshd_config'
-virt-customize -a "$IMAGE_FILE" --run-command \
-    'sed -i "s/.*PermitRootLogin.*/PermitRootLogin no/g" /etc/ssh/sshd_config'
-virt-customize -a "$IMAGE_FILE" --run-command \
-    "sed -i 's/^ssh_pwauth:[[:space:]]*false/ssh_pwauth: true/' /etc/cloud/cloud.cfg"
 virt-customize -a "$IMAGE_FILE" --timezone "Europe/Amsterdam"
 
 qemu-img resize "$IMAGE_FILE" 20G
