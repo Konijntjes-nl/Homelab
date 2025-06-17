@@ -16,7 +16,7 @@ else
     exit 1
 fi
 
-# Check required vars
+# Required vars
 : "${CLOUD_INIT_PASSWORD:?Missing CLOUD_INIT_PASSWORD in .env}"
 : "${CLOUD_INIT_USER:=mlam}"
 : "${CLOUD_INIT_SSHKEY:=/root/.ssh/id_rsa.pub}"
@@ -42,18 +42,19 @@ cd "$IMAGES_PATH"
 #############################################################################
 echo "Downloading cloud image..."
 #############################################################################
-wget -O Rocky-9-GenericCloud-Base.latest.x86_64.qcow2 \
-    https://rockylinux.mirror.liteserver.nl/9.5/images/x86_64/Rocky-9-GenericCloud-Base-9.5-20241118.0.x86_64.qcow2
+wget -O Rocky-9-GenericCloud.latest.x86_64.qcow2 \
+    https://rockylinux.mirror.liteserver.nl/9/images/x86_64/Rocky-9-GenericCloud.latest.x86_64.qcow2
 
 #############################################################################
-echo "Modifying cloud image with virt-customize..."
+echo "Modifying cloud image (minimal install)..."
 #############################################################################
-IMAGE_FILE="Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+IMAGE_FILE="Rocky-9-GenericCloud.latest.x86_64.qcow2"
 
-virt-customize -a "$IMAGE_FILE" --install "vim,bash-completion,wget,curl,qemu-guest-agent"
-virt-customize -a "$IMAGE_FILE" --run-command 'systemctl enable qemu-guest-agent'
-virt-customize -a "$IMAGE_FILE" --timezone "Europe/Amsterdam"
-virt-customize -a "$IMAGE_FILE" --selinux-relabel
+virt-customize -a "$IMAGE_FILE" \
+  --install "cloud-init,qemu-guest-agent,openssh-server,sudo" \
+  --run-command 'systemctl enable qemu-guest-agent sshd' \
+  --timezone "Europe/Amsterdam" \
+  --selinux-relabel
 
 qemu-img resize "$IMAGE_FILE" 20G
 
@@ -80,13 +81,15 @@ qm set "$TEMPLATE_ID" --ide2 unraid:cloudinit --boot order=scsi0
 qm set "$TEMPLATE_ID" --ipconfig0 ip="$CLOUD_INIT_IP" \
     --nameserver "$CLOUD_INIT_NAMESERVER" \
     --searchdomain "$CLOUD_INIT_SEARCHDOMAIN"
+
 qm set "$TEMPLATE_ID" \
-    --ciupgrade 0 \
+    --ciupgrade 1 \
     --ciuser "$CLOUD_INIT_USER" \
     --sshkeys "$CLOUD_INIT_SSHKEY" \
     --cipassword "$CLOUD_INIT_PASSWORD"
+
 qm cloudinit update "$TEMPLATE_ID"
 qm set "$TEMPLATE_ID" --name "${VM_NAME}-template"
 qm template "$TEMPLATE_ID"
 
-echo "✅ Rocky Linux 9 template created as VM ID $TEMPLATE_ID"
+echo "✅ Rocky Linux 9 MINIMAL template created as VM ID $TEMPLATE_ID"

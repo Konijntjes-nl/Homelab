@@ -21,7 +21,7 @@ fi
 : "${CLOUD_INIT_USER:=mlam}"
 : "${CLOUD_INIT_SSHKEY:=/root/.ssh/id_rsa.pub}"
 : "${IMAGES_PATH:=/root/images/}"
-: "${TEMPLATE_ID:=9001}"
+: "${TEMPLATE_ID:=9002}"
 : "${VM_NAME:=ubuntu24}"
 : "${CLOUD_INIT_IP:=dhcp}"
 : "${CLOUD_INIT_NAMESERVER:=10.0.0.254}"
