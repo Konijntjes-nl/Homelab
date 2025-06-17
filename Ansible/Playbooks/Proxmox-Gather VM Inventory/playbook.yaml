@@ -1,0 +1,18 @@
+---
+- name: Gather Proxmox VM Inventory
+  hosts: proxmox
+  gather_facts: no
+  tasks:
+    - name: Fetch list of VMs
+      uri:
+        url: "https://{{ inventory_hostname }}:8006/api2/json/nodes/{{ ansible_hostname }}/qemu"
+        method: GET
+        user: "root@pam"
+        password: "{{ proxmox_password }}"
+        force_basic_auth: yes
+        validate_certs: no
+      register: vm_list
+
+    - name: Show VM info
+      debug:
+        var: vm_list.json.data

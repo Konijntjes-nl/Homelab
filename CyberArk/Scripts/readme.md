@@ -12,9 +12,6 @@ This folder contains PowerShell scripts for automating CyberArk Privileged Acces
 - `Staging/`  
   Work-in-progress scripts under development or testing before promotion to `Done/`.
 
-- `Ideas/`  
-  Brainstorming notes, concepts, or early-stage automation ideas related to CyberArk.
-
 ---
 
 ## Usage

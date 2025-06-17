@@ -1,0 +1,40 @@
+---
+- name: CyberArk Rotate Password Example
+  hosts: localhost
+  vars:
+    pvwa_url: "https://pvwa.cybermark.lab"
+    api_username: "monitoring-user"
+    api_password: "yourpassword"  # Ideally injected securely
+    safe_name: "MySafe"
+    account_name: "my-service-account"
+
+  tasks:
+    - name: Authenticate to CyberArk API and get token
+      uri:
+        url: "{{ pvwa_url }}/PasswordVault/API/Auth/CyberArk/Logon"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ api_username }}"
+          password: "{{ api_password }}"
+        return_content: yes
+        status_code: 200
+      register: auth_response
+
+    - set_fact:
+        token: "{{ auth_response.json.CyberArkLogonResult }}"
+
+    - name: Get account details
+      uri:
+        url: "{{ pvwa_url }}/PasswordVault/API/Accounts?search={{ account_name }}"
+        headers:
+          Authorization: "Bearer {{ token }}"
+        method: GET
+        return_content: yes
+      register: accounts_response
+
+    - name: Debug account info
+      debug:
+        var: accounts_response.json
+
+    # Additional tasks to rotate password would go here (example for brevity)

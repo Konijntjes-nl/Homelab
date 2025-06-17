@@ -1,0 +1,37 @@
+---
+- name: Create Rocky Linux 10 VM Template on Proxmox
+  hosts: proxmox
+  vars:
+    vmid: 9000
+    iso_path: local:iso/Rocky-10-x86_64.iso
+    storage: local-lvm
+    vm_name: rocky10-template
+    cores: 4
+    memory: 4096
+    disk_size: 40G
+
+  tasks:
+    - name: Create VM
+      community.general.proxmox:
+        api_user: "root@pam"
+        api_password: "{{ proxmox_password }}"
+        api_host: "{{ inventory_hostname }}"
+        vmid: "{{ vmid }}"
+        name: "{{ vm_name }}"
+        cores: "{{ cores }}"
+        memory: "{{ memory }}"
+        net0: virtio,bridge=vmbr0
+        ide2: "{{ iso_path }},media=cdrom"
+        scsihw: virtio-scsi-pci
+        sata0: "{{ storage }}:{{ disk_size }}"
+        boot: cd
+        timeout: 300
+        state: present
+
+    - name: Start VM
+      community.general.proxmox:
+        api_user: "root@pam"
+        api_password: "{{ proxmox_password }}"
+        api_host: "{{ inventory_hostname }}"
+        vmid: "{{ vmid }}"
+        state: started
