@@ -1,97 +1,114 @@
-<#
-=======================================
-CyberArk Privileged Account Usage Logs
-Author       : Mark Lam
-Created      : 2025-06-17
-Description  : Retrieves privileged account usage logs from CyberArk.
-               Supports CCP or manual password. Outputs to CSV.
-=======================================
-#>
+# Parameters
+$pvwaURL  = "https://pvwa.cybermark.lab"
+$username = "monitoring-user"
+$authType = "CyberArk"
+$useCCP   = $true
 
-# ========== CONFIGURATION ==========
-# PVWA Configuration
-$pvwaURL      = "https://pvwa.cybermark.lab"
-$username     = "monitoring-user"
-$authType     = "CyberArk"
+$ccpIP    = "ccp.cybermark.lab"
+$appID    = "PVWA_App"
+$safe     = "CyberArk-Safes"
+$object   = "monitoring-user"
 
-# CCP Configuration
-$useCCP       = $true
-$ccpIP        = "ccp.cybermark.lab"
-$appID        = "MonitoringApp"
-$ccpSafe      = "PrivilegedAccounts"
-$ccpObject    = "monitoring-user"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$ErrorActionPreference = "Stop"
 
-# Date Range
-$startDate = Read-Host "Enter start date (yyyy-MM-dd)"
-$endDate   = Read-Host "Enter end date (yyyy-MM-dd)"
-
-# Output File
-$outputCSV = "$PSScriptRoot\CyberArk_UsageLogs_$(Get-Date -Format 'yyyyMMdd_HHmm').csv"
-
-# ========== GET PASSWORD ==========
-if ($useCCP) {
-    try {
-        Write-Host "🔐 Retrieving password via CCP..." -ForegroundColor Cyan
-        $ccpResponse = Invoke-RestMethod -Method GET `
-            -Uri "https://$ccpIP/AIMWebService/api/Accounts?AppID=$appID&Safe=$ccpSafe&Object=$ccpObject" `
-            -Headers @{ "Content-Type" = "application/json" }
-        $password = $ccpResponse.Content
-    } catch {
-        Write-Error "❌ Failed to retrieve password from CCP: $_"
-        exit 1
-    }
-} else {
-    Write-Host "🔐 Enter password manually:"
-    $securePass = Read-Host -AsSecureString
-    $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
-    )
-}
-
-# ========== LOGIN ==========
-try {
-    $body = @{ username = $username; password = $password } | ConvertTo-Json
-    $token = Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Auth/$authType/Logon" `
-        -Method POST -Body $body -ContentType "application/json"
-    Write-Host "✅ Authenticated successfully." -ForegroundColor Green
-} catch {
-    Write-Error "❌ Authentication failed: $_"
-    exit 1
-}
-
-$headers = @{ Authorization = $token }
-
-# ========== GET AUDIT LOGS ==========
-try {
-    $uri = "$pvwaURL/PasswordVault/API/Audits?startDate=$startDate&endDate=$endDate&search=Logon"
-    $audits = Invoke-RestMethod -Uri $uri -Headers $headers -Method GET
-
-    if (-not $audits.value) {
-        Write-Warning "No audit logs found for specified dates."
-        return
-    }
-
-    # ========== FILTER FOR PRIVILEGED ACCOUNT ACCESS ==========
-    $filtered = $audits.value | Where-Object {
-        $_.Action -eq "Logon" -and $_.User -like "a*" -and $_.TargetUser -like "b*"
-    }
-
-    if ($filtered.Count -eq 0) {
-        Write-Host "No privileged account usage logs found."
+function Get-Password {
+    if ($useCCP) {
+        try {
+            Write-Host "Retrieving password from CCP..."
+            $ccpResponse = Invoke-RestMethod -Method GET `
+                -Uri "https://$ccpIP/AIMWebService/api/Accounts?AppID=$appID&Safe=$safe&Query=Username=$object" `
+                -Headers @{ "Content-Type" = "application/json" }
+            return $ccpResponse.Content
+        } catch {
+            Write-Error "Failed to retrieve password from CCP: $_"
+            exit 1
+        }
     } else {
-        $filtered |
-            Select-Object Date, User, TargetUser, Action, Safe, System, TicketingID |
-            Export-Csv -Path $outputCSV -NoTypeInformation -Encoding UTF8
-        Write-Host "💾 Exported logs to $outputCSV" -ForegroundColor Green
+        Write-Host "Please enter your password:" -ForegroundColor Yellow
+        $securePass = Read-Host -AsSecureString
+        return [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
+        )
     }
-} catch {
-    Write-Error "❌ Failed to retrieve audit logs: $_"
 }
 
-# ========== LOGOFF ==========
+function Read-Input {
+    param([string]$Prompt, [bool]$AllowEmpty=$false)
+    do {
+        $input = Read-Host $Prompt
+        if ($AllowEmpty -or $input.Trim() -ne '') { return $input.Trim() }
+    } while ($true)
+}
+
+# Get inputs
+$accountName = Read-Input "Enter Account Name to search"
+$startDateStr = Read-Input "Enter Start Date (yyyy-MM-dd), leave empty for 30 days ago" $true
+$endDateStr = Read-Input "Enter End Date (yyyy-MM-dd), leave empty for today" $true
+$actionFilter = Read-Input "Enter Action filter (PSM Connect, Password Access, Window Title) or 'All'" $true
+
+if ([string]::IsNullOrEmpty($startDateStr)) {
+    $startDate = (Get-Date).AddDays(-30).Date
+} else {
+    $startDate = [DateTime]::ParseExact($startDateStr, 'yyyy-MM-dd', $null)
+}
+if ([string]::IsNullOrEmpty($endDateStr)) {
+    $endDate = (Get-Date).Date.AddDays(1).AddSeconds(-1)
+} else {
+    $endDate = [DateTime]::ParseExact($endDateStr, 'yyyy-MM-dd', $null).AddDays(1).AddSeconds(-1)
+}
+if ([string]::IsNullOrEmpty($actionFilter)) { $actionFilter = 'All' }
+
+$password = Get-Password
+
 try {
-    Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Auth/Logoff" -Headers $headers -Method POST | Out-Null
-    Write-Host "🔒 Logged off from CyberArk."
+    Write-Host "Logging in to PVWA..."
+    $body = @{ username = $username; password = $password } | ConvertTo-Json
+    $token = Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Auth/$authType/Logon" -Method POST -Body $body -ContentType "application/json"
+    $headers = @{ Authorization = $token }
+
+    Write-Host "Searching for account '$accountName'..."
+    $searchResult = Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Accounts?search=$accountName" -Headers $headers -Method GET
+    if ($searchResult.value.Count -eq 0) {
+        Write-Warning "No accounts found matching '$accountName'."
+        exit
+    }
+    $account = $searchResult.value[0]
+    Write-Host "Found account: $($account.Name) (ID: $($account.id))"
+
+    Write-Host "Retrieving activities..."
+    $activitiesRaw = Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Accounts/$($account.id)/Activities" -Headers $headers -Method GET
+
+    $filteredActivities = $activitiesRaw.Activities | Where-Object {
+        $date = [DateTimeOffset]::FromUnixTimeSeconds($_.Date).DateTime
+        ($date -ge $startDate) -and ($date -le $endDate) -and
+        ($actionFilter -eq 'All' -or $_.Action -eq $actionFilter)
+    }
+
+    if ($filteredActivities.Count -eq 0) {
+        Write-Host "No activities found for the specified criteria."
+        exit
+    }
+
+    # Output results to console
+    $filteredActivities | ForEach-Object {
+        $date = [DateTimeOffset]::FromUnixTimeSeconds($_.Date).DateTime
+        Write-Host ("{0} | {1,-20} | {2}" -f $date.ToString("yyyy-MM-dd HH:mm:ss"), $_.User, $_.Action)
+    }
+
+    # Export CSV prompt
+    $exportCsv = Read-Input "Export results to CSV? (Y/N)" 
+    if ($exportCsv -match '^[Yy]') {
+        $filePath = Read-Input "Enter output CSV file path"
+        $filteredActivities | Select-Object @{n='Time';e={[DateTimeOffset]::FromUnixTimeSeconds($_.Date).DateTime}}, User, Action |
+            Export-Csv -Path $filePath -NoTypeInformation -Encoding UTF8
+        Write-Host "Results exported to $filePath"
+    }
+
 } catch {
-    Write-Warning "⚠️ Failed to log off cleanly."
+    Write-Error "Error: $_"
+} finally {
+    if ($headers) {
+        try { Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Auth/Logoff" -Headers $headers -Method POST | Out-Null } catch {}
+    }
 }

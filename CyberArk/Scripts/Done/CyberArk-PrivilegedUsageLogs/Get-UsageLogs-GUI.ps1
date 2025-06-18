@@ -1,125 +1,202 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# ========== CONFIGURATION ==========
+# ==== CONFIGURATION ====
 $pvwaURL      = "https://pvwa.cybermark.lab"
 $username     = "monitoring-user"
 $authType     = "CyberArk"
+$useCCP       = $true
 
-# CCP Config
 $ccpIP        = "ccp.cybermark.lab"
-$appID        = "MonitoringApp"
-$ccpSafe      = "PrivilegedAccounts"
-$ccpObject    = "monitoring-user"
+$appID        = "PVWA_App"
+$safe         = "CyberArk-Safes"
+$object       = "monitoring-user"
 
-# ========== FORM SETUP ==========
-$form = New-Object Windows.Forms.Form
-$form.Text = "CyberArk Usage Log Viewer"
-$form.Size = New-Object Drawing.Size(500, 420)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$ErrorActionPreference = "Stop"
+
+function Get-Password {
+    if ($useCCP) {
+        try {
+            $ccpResponse = Invoke-RestMethod -Method GET `
+                -Uri "https://$ccpIP/AIMWebService/api/Accounts?AppID=$appID&Safe=$safe&Query=Username=$object" `
+                -Headers @{ "Content-Type" = "application/json" }
+            $Password = $ccpResponse.Content
+            Write-Host "🔐 Password retrieved securely from CCP."
+            return $Password
+        } catch {
+            Write-Error "❌ Failed to retrieve password from CCP: $_"
+            exit 1
+        }
+    } else {
+        Write-Host "🔐 CCP disabled. Please enter your password:" -ForegroundColor Yellow
+        $securePass = Read-Host -AsSecureString
+        $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
+        )
+        return $password
+    }
+}
+
+# ==== GUI Setup ====
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "CyberArk Account Activity Viewer"
+$form.Size = New-Object System.Drawing.Size(600,480)
 $form.StartPosition = "CenterScreen"
 
-$labelStart = New-Object Windows.Forms.Label
-$labelStart.Text = "Start Date:"
-$labelStart.Location = New-Object Drawing.Point(20,20)
-$form.Controls.Add($labelStart)
+# Account Label & Textbox
+$lblAccount = New-Object System.Windows.Forms.Label
+$lblAccount.Text = "Account Name:"
+$lblAccount.Location = New-Object System.Drawing.Point(10,20)
+$lblAccount.AutoSize = $true
+$form.Controls.Add($lblAccount)
 
-$dateStart = New-Object Windows.Forms.DateTimePicker
-$dateStart.Location = New-Object Drawing.Point(100, 18)
-$dateStart.Width = 350
-$form.Controls.Add($dateStart)
+$txtAccount = New-Object System.Windows.Forms.TextBox
+$txtAccount.Location = New-Object System.Drawing.Point(110,18)
+$txtAccount.Size = New-Object System.Drawing.Size(150,20)
+$form.Controls.Add($txtAccount)
 
-$labelEnd = New-Object Windows.Forms.Label
-$labelEnd.Text = "End Date:"
-$labelEnd.Location = New-Object Drawing.Point(20,60)
-$form.Controls.Add($labelEnd)
+# Start Date Label & DateTimePicker
+$lblStartDate = New-Object System.Windows.Forms.Label
+$lblStartDate.Text = "Start Date:"
+$lblStartDate.Location = New-Object System.Drawing.Point(10,50)
+$lblStartDate.AutoSize = $true
+$form.Controls.Add($lblStartDate)
 
-$dateEnd = New-Object Windows.Forms.DateTimePicker
-$dateEnd.Location = New-Object Drawing.Point(100, 58)
-$dateEnd.Width = 350
-$form.Controls.Add($dateEnd)
+$dtpStart = New-Object System.Windows.Forms.DateTimePicker
+$dtpStart.Format = [System.Windows.Forms.DateTimePickerFormat]::Short
+$dtpStart.Location = New-Object System.Drawing.Point(110,48)
+$form.Controls.Add($dtpStart)
 
-$chkCCP = New-Object Windows.Forms.CheckBox
-$chkCCP.Text = "Use CCP"
-$chkCCP.Location = New-Object Drawing.Point(20, 100)
-$chkCCP.Checked = $true
-$form.Controls.Add($chkCCP)
+# End Date Label & DateTimePicker
+$lblEndDate = New-Object System.Windows.Forms.Label
+$lblEndDate.Text = "End Date:"
+$lblEndDate.Location = New-Object System.Drawing.Point(10,80)
+$lblEndDate.AutoSize = $true
+$form.Controls.Add($lblEndDate)
 
-$lblPassword = New-Object Windows.Forms.Label
-$lblPassword.Text = "Password:"
-$lblPassword.Location = New-Object Drawing.Point(20,140)
-$form.Controls.Add($lblPassword)
+$dtpEnd = New-Object System.Windows.Forms.DateTimePicker
+$dtpEnd.Format = [System.Windows.Forms.DateTimePickerFormat]::Short
+$dtpEnd.Location = New-Object System.Drawing.Point(110,78)
+$form.Controls.Add($dtpEnd)
 
-$txtPassword = New-Object Windows.Forms.TextBox
-$txtPassword.UseSystemPasswordChar = $true
-$txtPassword.Location = New-Object Drawing.Point(100,138)
-$txtPassword.Width = 350
-$form.Controls.Add($txtPassword)
+# Action Filter Label & ComboBox
+$lblAction = New-Object System.Windows.Forms.Label
+$lblAction.Text = "Filter Action:"
+$lblAction.Location = New-Object System.Drawing.Point(10,110)
+$lblAction.AutoSize = $true
+$form.Controls.Add($lblAction)
 
-$btnRun = New-Object Windows.Forms.Button
-$btnRun.Text = "Run Query"
-$btnRun.Width = 100
-$btnRun.Location = New-Object Drawing.Point(180, 180)
-$form.Controls.Add($btnRun)
+$ddlAction = New-Object System.Windows.Forms.ComboBox
+$ddlAction.Location = New-Object System.Drawing.Point(110,108)
+$ddlAction.Size = New-Object System.Drawing.Size(150, 20)
+$ddlAction.DropDownStyle = 'DropDownList'
+$ddlAction.Items.AddRange(@("All", "PSM Connect", "Password Access", "Window Title"))
+$ddlAction.SelectedIndex = 0
+$form.Controls.Add($ddlAction)
 
-$statusLabel = New-Object Windows.Forms.Label
-$statusLabel.Text = ""
-$statusLabel.Location = New-Object Drawing.Point(20, 220)
-$statusLabel.Size = New-Object Drawing.Size(450, 100)
-$form.Controls.Add($statusLabel)
+# Button to get activities
+$btnGet = New-Object System.Windows.Forms.Button
+$btnGet.Text = "Get Activities"
+$btnGet.Location = New-Object System.Drawing.Point(280,108)
+$form.Controls.Add($btnGet)
 
-# ========== BUTTON LOGIC ==========
-$btnRun.Add_Click({
-    $form.Cursor = 'WaitCursor'
-    $startDate = $dateStart.Value.ToString("yyyy-MM-dd")
-    $endDate = $dateEnd.Value.ToString("yyyy-MM-dd")
-    $password = $null
+# ListView for results (only Time, User, Action)
+$listView = New-Object System.Windows.Forms.ListView
+$listView.Location = New-Object System.Drawing.Point(10,140)
+$listView.Size = New-Object System.Drawing.Size(560,260)
+$listView.View = 'Details'
+$listView.FullRowSelect = $true
+$listView.GridLines = $true
+$listView.Columns.Add("Time", 180)
+$listView.Columns.Add("User", 180)
+$listView.Columns.Add("Action", 180)
+$form.Controls.Add($listView)
 
-    try {
-        if ($chkCCP.Checked) {
-            $statusLabel.Text = "Retrieving password from CCP..."
-            $ccpResponse = Invoke-RestMethod -Method GET `
-                -Uri "https://$ccpIP/AIMWebService/api/Accounts?AppID=$appID&Safe=$ccpSafe&Object=$ccpObject" `
-                -Headers @{ "Content-Type" = "application/json" }
-            $password = $ccpResponse.Content
-        } else {
-            if (-not $txtPassword.Text) {
-                [System.Windows.Forms.MessageBox]::Show("Please enter a password.", "Error", "OK", "Error")
-                return
-            }
-            $password = $txtPassword.Text
-        }
+# Status Label
+$lblStatus = New-Object System.Windows.Forms.Label
+$lblStatus.Location = New-Object System.Drawing.Point(10,410)
+$lblStatus.Size = New-Object System.Drawing.Size(560,30)
+$form.Controls.Add($lblStatus)
 
-        $statusLabel.Text = "Authenticating..."
-        $body = @{ username = $username; password = $password } | ConvertTo-Json
-        $token = Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Auth/$authType/Logon" `
-            -Method POST -Body $body -ContentType "application/json"
-        $headers = @{ Authorization = $token }
+$btnGet.Add_Click({
+    $listView.Items.Clear()
+    $lblStatus.Text = "Authenticating..."
 
-        $statusLabel.Text = "Retrieving logs..."
-        $uri = "$pvwaURL/PasswordVault/API/Audits?startDate=$startDate&endDate=$endDate&search=Logon"
-        $audits = Invoke-RestMethod -Uri $uri -Headers $headers -Method GET
-
-        $filtered = $audits.value | Where-Object {
-            $_.Action -eq "Logon" -and $_.User -like "a*" -and $_.TargetUser -like "b*"
-        }
-
-        if ($filtered.Count -eq 0) {
-            $statusLabel.Text = "No privileged account usage logs found."
-        } else {
-            $csvPath = "$PSScriptRoot\CyberArk_UsageLogs_GUI_$(Get-Date -Format 'yyyyMMdd_HHmm').csv"
-            $filtered |
-                Select-Object Date, User, TargetUser, Action, Safe, System, TicketingID |
-                Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
-            $statusLabel.Text = "Logs exported to:`n$csvPath"
-        }
-
-        Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Auth/Logoff" -Headers $headers -Method POST | Out-Null
-    } catch {
-        $statusLabel.Text = "❌ Error: $($_.Exception.Message)"
+    $password = Get-Password
+    if (-not $password) {
+        $lblStatus.Text = "Password input cancelled or failed."
+        return
     }
 
-    $form.Cursor = 'Default'
+    $form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
+
+    Start-Job -ScriptBlock {
+        param ($pvwaURL, $authType, $username, $password, $accountName, $startDate, $endDate, $actionFilter)
+
+        $ErrorActionPreference = "Stop"
+        $body = @{ username = $username; password = $password } | ConvertTo-Json
+        $headers = $null
+        $result = @{}
+
+        try {
+            $token = Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Auth/$authType/Logon" `
+                -Method POST -Body $body -ContentType "application/json"
+            $headers = @{ Authorization = $token }
+
+            $searchResult = Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Accounts?search=$accountName" `
+                -Headers $headers -Method GET
+            if ($searchResult.value.Count -eq 0) {
+                $result.Status = "No account found."
+                return $result
+            }
+            $account = $searchResult.value[0]
+
+            $activitiesRaw = Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Accounts/$($account.id)/Activities" `
+                -Headers $headers -Method GET
+
+            $filtered = $activitiesRaw.Activities | Where-Object {
+                $date = [DateTimeOffset]::FromUnixTimeSeconds($_.Date).DateTime
+                ($date -ge $startDate) -and ($date -le $endDate) -and
+                ($actionFilter -eq 'All' -or $_.Action -eq $actionFilter)
+            }
+
+            $result.Status = "Success"
+            $result.Data = $filtered
+            return $result
+        } catch {
+            $result.Status = "Error: $_"
+            return $result
+        } finally {
+            if ($headers) {
+                try {
+                    Invoke-RestMethod -Uri "$pvwaURL/PasswordVault/API/Auth/Logoff" -Headers $headers -Method POST | Out-Null
+                } catch {}
+            }
+        }
+    } -ArgumentList $pvwaURL, $authType, $username, $password, $txtAccount.Text, $dtpStart.Value.Date, $dtpEnd.Value.Date.AddDays(1).AddSeconds(-1), $ddlAction.SelectedItem |
+    Wait-Job | Receive-Job | ForEach-Object {
+        $form.Cursor = [System.Windows.Forms.Cursors]::Default
+
+        if ($_.Status -eq "Success") {
+            $listView.Items.Clear()
+            if ($_.Data.Count -eq 0) {
+                $lblStatus.Text = "No matching activities found."
+                return
+            }
+
+            foreach ($act in $_.Data) {
+                $date = [DateTimeOffset]::FromUnixTimeSeconds($act.Date).DateTime
+                $item = New-Object System.Windows.Forms.ListViewItem($date.ToString("yyyy-MM-dd HH:mm:ss"))
+                $item.SubItems.Add($act.User) | Out-Null
+                $item.SubItems.Add($act.Action) | Out-Null
+                $listView.Items.Add($item) | Out-Null
+            }
+            $lblStatus.Text = "Displayed $($_.Data.Count) activities."
+        } else {
+            $lblStatus.Text = $_.Status
+        }
+    }
 })
 
-# ========== SHOW FORM ==========
-[void]$form.ShowDialog()
+[void] $form.ShowDialog()
