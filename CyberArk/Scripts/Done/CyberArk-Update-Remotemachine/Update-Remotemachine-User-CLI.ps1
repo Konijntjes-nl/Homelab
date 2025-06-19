@@ -1,22 +1,41 @@
 <#
-CyberArk RemoteMachines Single-Account Editor
-- Fetches account by name
-- Extracts current remoteMachines to .txt file
-- Allows review and update
-- Adds preview, commenting, and version control
+=======================================
+CyberArk RemoteMachines Single Account Updater
+Author       : Mark Lam 
+Created      : 2025-06-19
+Description  : 
+  This PowerShell script retrieves a single privileged account from CyberArk
+  based on a username search, exports the remoteMachines field to a text file,
+  provides a preview of the proposed changes, saves a version-controlled backup,
+  and then applies the update via a PATCH request.
+
+Documentation:
+  CyberArk REST API Reference:
+  - https://docs.cyberark.com/pam-self-hosted/latest/en/Content/WebServices/GetAccountDetails.htm
+  - https://docs.cyberark.com/pam-self-hosted/latest/en/Content/WebServices/UpdateAccount.htm
+
+=======================================
+  Revision History:
+  ---------------------------------------------------------------------------------
+  Date        | Author    | Description
+  ------------|-----------|--------------------------------------------------------
+  2025-06-19  | Mark Lam  | Initial implementation for single account remoteMachines update
+  2025-06-19  | Mark Lam  | Added preview, backup version control, and commenting
+  ------------|-----------|--------------------------------------------------------
+=======================================
 #>
 
 # ========== CONFIGURATION ==========
 $pvwaURL    = "<PVWA URL>"				    # e.g., https://pvwa.cybermark.lab
 $username   = "<USERNAME>"				    # Admin or monitoring user
-$authType   = "<Auth>"					    # CyberArk / LDAP / RADIUS
+$authType   = "<Auth>"				    # CyberArk / LDAP / RADIUS
 
 # ========== CCP Configuration ==========
-$ccpIP      = "<CCP URL>"       			# FQDN or IP of CCP
-$appID      = "<APPID>"                    	# Application ID for CCP
-$safe       = "<SAFE>"                    	# Safe name
-$object     = "<USERNAME>"       			# Username used to query CCP
-$useCCP     = $true                         # Set to $false for manual password
+$ccpIP      = "<CCP URL>"			    # FQDN or IP of CCP
+$appID      = "<APPID>"			        # Application ID for CCP
+$safe       = "<SAFE>"			        # Safe name
+$object     = "<USERNAME>"			    # CCP lookup object
+$useCCP     = $true                         # Set to $false to use manual password
 
 # ========== INPUT ==========
 $targetAccountName = Read-Host "Enter CyberArk Username to search"

@@ -1,10 +1,35 @@
 <#
+=======================================
 CyberArk Bulk RemoteMachines Updater
-- Extracts remoteMachines from one account
-- Saves to `remoteMachines_bulk.txt`
-- Allows previewing and confirming before applying changes
-- Logs each change to a timestamped backup file
+Author       : Mark Lam 
+Created      : 2025-06-19
+Description  : 
+  This PowerShell script connects to CyberArk's REST API to perform a bulk update 
+  of the `remoteMachinesAccess` property across all privileged accounts in a specified safe.
+  It retrieves account data, exports the existing remoteMachines to a single editable .txt file,
+  provides a preview of affected accounts, creates a version-controlled CSV backup,
+  and then performs the patch operation using the specified values.
+
+Documentation:
+  CyberArk REST API Reference:
+  - https://docs.cyberark.com/pam-self-hosted/latest/en/Content/WebServices/UpdateAccount.htm
+  - https://docs.cyberark.com/pam-self-hosted/latest/en/Content/WebServices/GetAccountDetails.htm
+
+=======================================
+  Revision History:
+  ---------------------------------------------------------------------------------
+  Date        | Author    | Description
+  ------------|-----------|--------------------------------------------------------
+  2025-06-19  | Mark Lam  | Initial script created with CCP & PATCH logic
+  2025-06-19  | Mark Lam  | Added preview mode and remoteMachines extraction to file
+  2025-06-19  | Mark Lam  | Implemented version-controlled CSV backup per update
+  2025-06-19  | Mark Lam  | Changed from per-account file to single-file input for bulk
+  ------------|-----------|--------------------------------------------------------
+  ------------|-----------|--------------------------------------------------------
+  ------------|-----------|--------------------------------------------------------
+=======================================
 #>
+
 
 # ========== CONFIGURATION ==========
 $pvwaURL    = "<PVWA URL>"				    # e.g., https://pvwa.cybermark.lab
