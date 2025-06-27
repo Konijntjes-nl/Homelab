@@ -1,7 +1,7 @@
 # === CONFIGURATION ===
-$PVWA = "https://pvwa.cybermark.lab"
-$User = "monitoring-user"
-$Pass = "Blitzkrieg00!"  # Replace securely!
+$PVWA = "<pvwa-url>"  
+$User = "<privileged-account>" 
+$Pass = "(replace)!"  # Replace securely!
 $ExportFolder = "$PSScriptRoot\PlatformExports"
 
 # Create export folder if it doesn't exist

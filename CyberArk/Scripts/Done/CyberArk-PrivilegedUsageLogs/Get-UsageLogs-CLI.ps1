@@ -1,13 +1,13 @@
-# Parameters
-$pvwaURL  = "https://pvwa.cybermark.lab"
-$username = "monitoring-user"
-$authType = "CyberArk"
-$useCCP   = $true
-
-$ccpIP    = "ccp.cybermark.lab"
-$appID    = "PVWA_App"
-$safe     = "CyberArk-Safes"
-$object   = "monitoring-user"
+# ===== CONFIGURATION =====
+# PVWA Settings 
+$pvwaurl        = "<pvwa-url>"                              # CCP address (FQDN or IP)
+$username       = "<privileged-account>"                    # Username of the privileged account
+$authtype       = "CyberArk"                                # Authentication type
+# CCP Settings
+$ccpIP          = "<ccp-url>"                       # CCP server
+$appID          = "<application-id>"                # CCP AppID
+$safe           = "<safe-name>"                     # Safe name
+$object         = "<privileged-account>"            # Object name
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Stop"
